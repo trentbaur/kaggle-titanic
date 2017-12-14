@@ -20,6 +20,8 @@ def tidy_data(data):
     data = data.join(enc_sex)
     data.drop(['sex'], axis = 1, inplace = True)
 
+    data.embarked = data.embarked.str.lower()
+    
     enc_embark = pd.get_dummies(data.embarked)
     data = data.join(enc_embark)
     data.drop(['embarked'], axis = 1, inplace = True)
