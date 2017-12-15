@@ -1,4 +1,5 @@
 import gather_data
+import plotting
 from sklearn.model_selection import train_test_split
 
 #----------------------------
@@ -38,7 +39,9 @@ train.drop(labels = ['Survived'], axis = 1, inplace = True)
 
 train = gather_data.tidy_data(train)
 
-cols_to_model = ['pclass', 'age', 'sibsp', 'parch', 'fare', 'female', 'male', 'c', 'q', 's']
+cols_to_model = ['pclass', 'ageIclass', 'age', 'sibsp', 'parch', 'fam_size', 'fare', 'female', 'male', 'c', 'q', 's']#, 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'T']
+                 #'age_0_12', 'age_12_18', 'age_18_25', 'age_25_40', 'age_40_60', 'age_60_75']
+#cols_to_model = ['pclass', 'ageIclass', 'age', 'sibsp', 'parch', 'fam_size', 'fare', 'female', 'male', 'c', 'q', 's', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'T']
 
 X_train, X_dev, y_train, y_dev = train_test_split(train[cols_to_model],
                                                   y_data,
@@ -57,26 +60,40 @@ from sklearn.linear_model import LogisticRegression
 model = LogisticRegression(C = 1)
 
 model.fit(X_train, y_train)
+
+
+
+from sklearn.ensemble import GradientBoostingClassifier
+
+model = GradientBoostingClassifier()
+
+model.fit(X_train, y_train)
 '''
 
 from sklearn.ensemble import RandomForestClassifier
 
-model = RandomForestClassifier(n_estimators = 1000,
+model = RandomForestClassifier(n_estimators = 10,
                                max_features = 3,
                                random_state = 0)
 
 model.fit(X_train, y_train)
 
+
 #--------------------------------------------------
 #   Generate metrics to evaluate model performance
 #--------------------------------------------------
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, roc_curve
+
+print(classification_report (y_train,
+                             model.predict(X_train),
+                             target_names = ['Survived', 'Died']))
 
 print(classification_report (y_dev,
                              model.predict(X_dev),
                              target_names = ['Survived', 'Died']))
 
-
+plotting.show_roc(y_train, model.predict(X_train))
+plotting.show_roc(y_dev, model.predict(X_dev))
 
 
 #--------------------------------------------------------------------
@@ -97,7 +114,7 @@ res = zip(test.passengerid, y_pred)
 
 import csv
 
-csvfile = "randomforest.csv"
+csvfile = "gbrt.csv"
 
 with open(csvfile, "w") as output:
     writer = csv.writer(output, lineterminator='\n')
