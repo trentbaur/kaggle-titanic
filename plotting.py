@@ -1,10 +1,30 @@
+import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc
+
+import gather_data
+
+def show_pairs_plot():
+
+    train_raw = gather_data.load_data()
+
+    cols = ['Pclass', 'Age', 'SibSp', 'Parch', 'Fare']
+    
+    axes = pd.plotting.scatter_matrix(train_raw[cols], alpha=0.2)
+    
+    plt.tight_layout()
+
+    return
+
+#   show_pairs_plot()
+
 
 def hist(x, p_bins = 10):
     
     plt.hist(x, bins = p_bins)
 
+    return
 
 #   plt.hist(X_train.age, bins = 20)
 #   plt.hist(X_train[y_train==0].age, bins = 20)
