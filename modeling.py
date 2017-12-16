@@ -4,7 +4,7 @@ import statsmodels.formula.api as sm
 import gather_data
 
 COLS_TO_MODEL = ['pclass', 
-                 'age*class',
+                 #'age*class',
                  'age',
                  'sibsp',
                  'parch',
@@ -24,7 +24,7 @@ def logreg_sig(p_vars = 'age * male'):
     
     df = gather_data.load_combined_tidy()
     
-    formula = 'Survived ~ ' + p_vars
+    formula = 'survived ~ ' + p_vars
     
     results = sm.ols(formula, data = df).fit()
     
@@ -34,4 +34,16 @@ def logreg_sig(p_vars = 'age * male'):
 
 #   logreg_sig('pclass + fare')
     
+def model_age():
+    
+    df = gather_data.load_data()
+    
+    formula = 'Age ~ Sex + Pclass'
+    
+    results = sm.ols(formula, data = df).fit()
+    
+    return results.summary()
+
+#   model_age()
+
 

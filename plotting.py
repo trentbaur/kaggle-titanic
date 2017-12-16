@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set(style="whitegrid", color_codes=True)
+
 from sklearn.metrics import roc_curve, auc
 
 import gather_data
@@ -9,7 +12,7 @@ def show_pairs_plot():
 
     train_raw = gather_data.load_data()
 
-    cols = ['Pclass', 'Age', 'SibSp', 'Parch', 'Fare']
+    cols = ['pclass', 'age', 'sibsp', 'parch', 'fare']
     
     axes = pd.plotting.scatter_matrix(train_raw[cols], alpha=0.2)
     
@@ -26,7 +29,7 @@ def show_boxplot_log_fare():
 
     ax = fig.add_subplot(111)
 
-    bplot = plt.boxplot([np.log(df[df.Survived==0].fare), np.log(df[df.Survived==1].fare)], patch_artist = True)
+    bplot = plt.boxplot([np.log(df[df.survived==0].fare), np.log(df[df.survived==1].fare)], patch_artist = True)
 
     for patch, color in zip(bplot['boxes'], ['red', 'lightgreen']):
         patch.set_facecolor(color)
@@ -38,20 +41,57 @@ def show_boxplot_log_fare():
     return
 
 #   show_boxplot_log_fare()
-    
-    
-def hist(x, p_bins = 10):
-    
-    plt.hist(x, bins = p_bins)
 
+def show_barplot_survival(p_var = 'cabin_floor'):
+    
+    df = gather_data.load_combined_tidy()
+    
+    pd.crosstab(df['survived'], df[p_var]).T.plot(kind='bar')
+    
     return
 
-#   plt.hist(X_train.age, bins = 20)
-#   plt.hist(X_train[y_train==0].age, bins = 20)
-#   plt.hist(X_train[y_train==1].age, bins = 20)
+#   show_barplot_survival('embarked')
+#   show_barplot_survival('pclass')
+#   show_barplot_survival('age')
+
+def show_dot_plot(p_x = 'cabin_floor', p_y = 'fare'):
     
-#   plt.hist(x_train[x_train.fare.notnull()].fare, bins = 20)
-#   plt.hist(x_train[(x_train.fare.notnull()) & (x_train.fare < 150) & (x_train.fare > 20)].fare, bins = 30)
+    df = gather_data.load_combined_tidy()
+    
+    g = sns.stripplot(x = p_x,
+                      y = p_y,
+                      data = df,
+                      jitter = True,
+                      hue = 'survived',
+                      palette = ['red', 'green'])
+    
+    return
+
+#   show_dot_plot()
+#   show_dot_plot('sibsp', 'age')
+
+    
+def show_hist(p_group = 'sibsp', p_x = 'age'):
+
+    df = gather_data.load_combined_tidy()
+    
+    grouped = df.groupby([p_group, p_x, 'survived'], as_index = False).aggregate(len)
+    grouped = grouped[[p_group, p_x, 'survived', 'passengerid']]
+    grouped.columns = [p_group, p_x, 'survived', 'count']
+
+    grid = sns.FacetGrid(grouped,
+                         col = p_group,
+                         col_wrap = 4,
+                         hue = 'survived',
+                         palette = ['red', 'green'])
+    
+    grid.set(ylim = (0, 30))
+    
+    grid.map(plt.bar, p_x, 'count', alpha = .7)
+    
+    return
+
+#   show_hist(p_group = 'pclass', p_x = 'age')
 
 
 def show_roc(y_dev, y_pred):

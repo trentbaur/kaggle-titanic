@@ -7,6 +7,8 @@ from sklearn.model_selection import train_test_split
 #------------------------------
 train_raw = gather_data.load_data('train')
 y_data = gather_data.load_y()
+
+
 train_tidy = gather_data.tidy_data('train')
 
 
@@ -43,7 +45,7 @@ model = RandomForestClassifier(n_estimators = 10,
                                max_features = 3,
                                random_state = 0)
 
-model.fit(X_train, y_train)
+model.fit(x_train, y_train)
 
 
 #--------------------------------------------------
@@ -52,15 +54,15 @@ model.fit(X_train, y_train)
 from sklearn.metrics import classification_report
 
 print(classification_report (y_train,
-                             model.predict(X_train),
+                             model.predict(x_train),
                              target_names = ['Survived', 'Died']))
 
 print(classification_report (y_dev,
-                             model.predict(X_dev),
+                             model.predict(x_dev),
                              target_names = ['Survived', 'Died']))
 
-plotting.show_roc(y_train, model.predict(X_train))
-plotting.show_roc(y_dev, model.predict(X_dev))
+plotting.show_roc(y_train, model.predict(x_train))
+plotting.show_roc(y_dev, model.predict(x_dev))
 
 
 #--------------------------------------------------------------------
@@ -86,7 +88,7 @@ csvfile = "gbrt.csv"
 
 with open(csvfile, "w") as output:
     writer = csv.writer(output, lineterminator='\n')
-    writer.writerow(['PassengerId', 'Survived'])
+    writer.writerow(['PassengerId', 'survived'])
     for line in res:
         id = line[0]
         value = line[1]

@@ -10,7 +10,12 @@ FOLDERS = {'raw': 'data_raw/',
 def load_data(data_type = 'train'):
     if data_type + '_raw' not in globals():
         print('Loading ' + data_type + '_raw')
-        globals()[data_type + '_raw'] = pd.read_csv(FOLDERS['raw'] + data_type + '.csv')
+        
+        df = pd.read_csv(FOLDERS['raw'] + data_type + '.csv')
+        
+        df.columns = [col.lower() for col in df.columns]
+
+        globals()[data_type + '_raw'] = df
         
     return globals()[data_type + '_raw']
 
@@ -19,8 +24,10 @@ def load_y():
     train_raw = load_data()
     
     if 'y_data' not in globals():
+        
         print('Loading y_data')
-        globals()['y_data'] = train_raw.Survived
+        
+        globals()['y_data'] = train_raw.survived
         
     return globals()['y_data']
 
@@ -34,14 +41,10 @@ def tidy_data(data_type = 'train'):
         data = load_data(data_type).copy()
         
         #   Survived will exist in training data but not dev data
-        if 'Survived' in data.columns:
-            data.drop(labels = ['Survived'], axis = 1, inplace = True)
-
-        data.columns = [col.lower() for col in data.columns]
+        if 'survived' in data.columns:
+            data.drop(labels = ['survived'], axis = 1, inplace = True)
     
         data.name = data.name.replace('Ms.', 'Miss', regex = True)
-        
-    #    data.loc[data.age.isnull(), 'age'] = 0
         
         for title in ('Master', 'Miss', 'Mr.', 'Mrs.', 'Dr'):
             med = math.ceil(data[(data.name.str.contains(title)) & (data.age.notnull())].age.describe()['50%'])

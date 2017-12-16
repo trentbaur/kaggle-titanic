@@ -40,14 +40,23 @@ def display_survival_counts():
 
     #   Explore survival counts for easily grouped columns
     for x in train_raw.columns.values:
-        if (x != 'Survived') & (len(train_raw[x].unique()) < 10):
+        if (x != 'survived') & (len(train_raw[x].unique()) < 10):
             print('Survival Counts for ' + x)
-            print(pd.crosstab(train_raw['Survived'], train_raw[x]))
+            print(pd.crosstab(train_raw['survived'], train_raw[x]))
             print()
     
     return
 
 #   display_survival_counts()
+
+
+def display_age_by(p_group = 'pclass'):
+    
+    print(all['age'].groupby([all[p_group], all['survived']]).mean())
+
+    return
+
+#display_age_by('parch')
 
 
 def explore_data():
@@ -61,6 +70,10 @@ def explore_data():
     print('--------------------\n')
     
     display_survival_counts()
+    
+    print('--------------------\n')
+    
+    display_age_by
     
     plotting.show_pairs_plot()
     
