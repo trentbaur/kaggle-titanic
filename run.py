@@ -6,13 +6,11 @@ from sklearn.model_selection import train_test_split
 #   Prepare / Tidy data
 #------------------------------
 train_raw = gather_data.load_data('train')
-
-y_data = train_raw.Survived
-
+y_data = gather_data.load_y()
 train_tidy = gather_data.tidy_data('train')
 
 
-X_train, X_dev, y_train, y_dev = train_test_split(train_tidy[modeling.COLS_TO_MODEL],
+x_train, x_dev, y_train, y_dev = train_test_split(train_tidy[modeling.COLS_TO_MODEL],
                                                   y_data,
                                                   random_state = 0)
 

@@ -1,3 +1,8 @@
+import pandas as pd
+import statsmodels.formula.api as sm
+
+import gather_data
+
 COLS_TO_MODEL = ['pclass', 
                  'age*class',
                  'age',
@@ -13,4 +18,23 @@ COLS_TO_MODEL = ['pclass',
                  #  Gender dummy variables, placed last to avoid comma-commenting issues
                  'female',
                  'male']
+
+
+def logreg_sig(p_vars = 'age * male'):
+    
+    train_tidy = gather_data.tidy_data('train')
+    y_data = gather_data.load_y()
+    
+    df = pd.concat([train_tidy, y_data], axis = 1)
+    
+    formula = 'Survived ~ ' + p_vars
+    
+    res2 = sm.ols(formula, data = df).fit()
+    
+    return res2.summary()
+
+#   logreg_sig()
+    
+#   logreg_sig('pclass')
+    
 

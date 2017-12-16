@@ -14,6 +14,16 @@ def load_data(data_type = 'train'):
     return globals()[data_type + '_raw']
 
 
+def load_y():
+    train_raw = load_data()
+    
+    if 'y_data' not in globals():
+        print('Loading y_data')
+        globals()['y_data'] = train_raw.Survived
+        
+    return globals()['y_data']
+
+
 def tidy_data(data_type = 'train'):
 
     if data_type + '_tidy' not in globals():
@@ -47,13 +57,13 @@ def tidy_data(data_type = 'train'):
     
         enc_sex = pd.get_dummies(data.sex)
         data = data.join(enc_sex)
-        data.drop(['sex'], axis = 1, inplace = True)
+        
+        data['age*male'] = data.age * data.male
     
         data.embarked = data.embarked.str.lower()
         
         enc_embark = pd.get_dummies(data.embarked)
         data = data.join(enc_embark)
-        data.drop(['embarked'], axis = 1, inplace = True)
     
         data.loc[data.fare.isnull(), 'fare'] = data.fare.describe()['50%']
         
