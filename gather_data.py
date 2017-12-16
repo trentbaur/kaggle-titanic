@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import math 
 import pdb
 
@@ -32,12 +33,12 @@ def tidy_data(data_type = 'train'):
 
         data = load_data(data_type).copy()
         
+        #   Survived will exist in training data but not dev data
         if 'Survived' in data.columns:
             data.drop(labels = ['Survived'], axis = 1, inplace = True)
 
         data.columns = [col.lower() for col in data.columns]
     
-        
         data.name = data.name.replace('Ms.', 'Miss', regex = True)
         
     #    data.loc[data.age.isnull(), 'age'] = 0
@@ -67,20 +68,34 @@ def tidy_data(data_type = 'train'):
     
         data.loc[data.fare.isnull(), 'fare'] = data.fare.describe()['50%']
         
+        data['fare_log'] = np.log(data.fare)
+        
         data['fam_size'] = data.sibsp + data.parch
-        data['age*class'] = data.age * data.pclass
         
         data['ticket_class'] = data.ticket.str.replace('[0-9]| ', '')
     
-        data['cabin_floor'] = data.cabin.str.replace('[0-9]| ', '').str.get(0)
+        data['cabin_floor'] = data.cabin.str.replace('[0-9]| ', '').str.get(0).astype('category')
     
         enc_floor = pd.get_dummies(data.cabin_floor)
         data = data.join(enc_floor)
-        
+
+        data.pclass = data.pclass.astype('category')
+        data.sibsp = data.sibsp.astype('category')
+        data.parch = data.parch.astype('category')
+        data.embarked = data.embarked.astype('category')
+                
         globals()[data_type + '_tidy'] = data
 
     return globals()[data_type + '_tidy']
 
 #   tidy_data()
+#   tidy_data().dtypes
 
+def load_combined_tidy():
+    train_tidy = tidy_data('train')
+    y_data = load_y()
+    
+    return pd.concat([train_tidy, y_data], axis = 1)
+    
+    
 

@@ -22,19 +22,16 @@ COLS_TO_MODEL = ['pclass',
 
 def logreg_sig(p_vars = 'age * male'):
     
-    train_tidy = gather_data.tidy_data('train')
-    y_data = gather_data.load_y()
-    
-    df = pd.concat([train_tidy, y_data], axis = 1)
+    df = gather_data.load_combined_tidy()
     
     formula = 'Survived ~ ' + p_vars
     
-    res2 = sm.ols(formula, data = df).fit()
+    results = sm.ols(formula, data = df).fit()
     
-    return res2.summary()
+    return results.summary()
 
 #   logreg_sig()
-    
-#   logreg_sig('pclass')
+
+#   logreg_sig('pclass + fare')
     
 

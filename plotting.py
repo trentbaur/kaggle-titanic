@@ -19,7 +19,27 @@ def show_pairs_plot():
 
 #   show_pairs_plot()
 
+def show_boxplot_log_fare():
+    df = gather_data.load_combined_tidy()
 
+    fig = plt.figure(1, figsize=(9, 6))
+
+    ax = fig.add_subplot(111)
+
+    bplot = plt.boxplot([np.log(df[df.Survived==0].fare), np.log(df[df.Survived==1].fare)], patch_artist = True)
+
+    for patch, color in zip(bplot['boxes'], ['red', 'lightgreen']):
+        patch.set_facecolor(color)
+            
+    ax.set_xticklabels(['Died', 'Survived'])
+    ax.set_title('Survival Boxplots of log(fare)')       
+    plt.show
+    
+    return
+
+#   show_boxplot_log_fare()
+    
+    
 def hist(x, p_bins = 10):
     
     plt.hist(x, bins = p_bins)
