@@ -87,7 +87,9 @@ def tidy_data(p_type = 'train'):
         data['fare_log'] = np.log(data.fare)
         data['fam_size'] = data.sibsp + data.parch
         data['ticket_class'] = data.ticket.str.replace('[0-9]| ', '')
-
+        data['is_alone'] = (data.fam_size==0).astype(int)
+        data['has_cabin'] = (data.cabin.isnull()).astype(int)
+        
         #   Create interaction variables
         for col in ['pclass', 'sibsp', 'parch', 'embarked', 'fam_size', 'ticket_class']:
             data[col] = data[col].astype('category')

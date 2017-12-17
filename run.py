@@ -51,6 +51,9 @@ model = RandomForestClassifier(n_estimators = 10,
 model.fit(x_train_thin, y_train)
 
 
+sorted(list(zip(model.feature_importances_, shared_columns)), key=lambda x: x[0])
+
+
 #--------------------------------------------------
 #   Generate metrics to evaluate model performance
 #--------------------------------------------------
