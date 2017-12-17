@@ -1,4 +1,5 @@
 import gather_data, plotting, modeling
+import numpy as np
 
 #------------------------------------------------------
 #   Load raw data and split between training and dev
@@ -91,7 +92,12 @@ plotting.show_roc(y_test, model.predict(x_test_thin))
 #--------------------------------------------------------------------
 x_eval = gather_data.tidy_data('eval')
 
-y_eval = model.predict(x_eval[shared_columns])
+eval_shared_columns = sorted(list(set(x_eval.columns).intersection(modeling.COLS_TO_MODEL)))
+
+X = x_eval[eval_shared_columns]
+
+#   np.save(gather_data.FOLDERS['clean'] + 'tidy', X)
+y_eval = model.predict(X)
 
 
 """
