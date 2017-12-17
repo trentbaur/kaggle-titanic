@@ -58,12 +58,12 @@ def show_dot_plot(p_x = 'cabin_floor', p_y = 'fare'):
     
     df = gather_data.load_combined_tidy()
     
-    g = sns.stripplot(x = p_x,
-                      y = p_y,
-                      data = df,
-                      jitter = True,
-                      hue = 'survived',
-                      palette = ['red', 'green'])
+    sns.stripplot(x = p_x,
+                  y = p_y,
+                  data = df,
+                  jitter = True,
+                  hue = 'survived',
+                  palette = ['red', 'green'])
     
     return
 

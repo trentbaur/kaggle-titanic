@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
-import math 
-import pdb
+from sklearn.model_selection import train_test_split
+import modeling
 
 
 FOLDERS = {'raw': 'data_raw/',
@@ -20,85 +20,90 @@ def load_data(data_type = 'train'):
     return globals()[data_type + '_raw']
 
 
-def load_y():
+def split_data(p_random = 125):
     train_raw = load_data()
     
-    if 'y_data' not in globals():
-        
-        print('Loading y_data')
-        
-        globals()['y_data'] = train_raw.survived
-        
-    return globals()['y_data']
-
-
-def tidy_data(data_type = 'train'):
-
-    if data_type + '_tidy' not in globals():
-        
-        print('Loading ' + data_type + '_tidy')
-
-        data = load_data(data_type).copy()
-        
-        #   Survived will exist in training data but not dev data
-        if 'survived' in data.columns:
-            data.drop(labels = ['survived'], axis = 1, inplace = True)
+    x_train, x_test, y_train, y_test = train_test_split(train_raw,
+                                                        train_raw.survived,
+                                                        random_state = p_random)
     
-        data.name = data.name.replace('Ms.', 'Miss', regex = True)
-        
-        for title in ('Master', 'Miss', 'Mr.', 'Mrs.', 'Dr'):
-            med = math.ceil(data[(data.name.str.contains(title)) & (data.age.notnull())].age.describe()['50%'])
-            
-            data.loc[data.age.isnull() & data.name.str.contains(title), 'age'] = med
+    globals()['x_train'] = x_train
+    globals()['x_test'] = x_test
+    globals()['y_train'] = y_train
+    globals()['y_test'] = y_test
     
+    return
+
+#   split_data()
+
+
+def get_data(p_name = 'x_train'):
+    
+    if p_name == 'x_eval':
+        return load_data('test')
+    
+    elif p_name not in globals():
+        split_data()
+    
+    return globals()[p_name]
+
+#   get_data()
+
+
+#----------------------------------------------------------
+#   Tidy Data Function
+#   This must be suitable for both training and test data
+#       and the final test data
+#----------------------------------------------------------
+def tidy_data(p_type = 'train'):
+
+    if p_type + '_tidy' not in globals():
+
+        data = get_data('x_' + p_type).copy()
+        
+        print('Loading ' + p_type + '_tidy')
+        
+        #   Fill in missing age values based on model
+        data.loc[data.age.isnull(), 'age'] = modeling.model_age(data)
+
+        #   Place ages into bins    
         bins = [0, 12, 18, 25, 40, 60, 75]
-    
-        #pdb.set_trace()
-        
+       
         data['age_bin'] = pd.cut(data['age'], bins, labels = ['age_0_12', 'age_12_18', 'age_18_25', 'age_25_40', 'age_40_60', 'age_60_75'])
         enc_age = pd.get_dummies(data.age_bin)
         data = pd.concat([data, enc_age], axis = 1)
     
+        #   Expand sex column into dummy variables
         enc_sex = pd.get_dummies(data.sex)
-        data = data.join(enc_sex)
-        
-        data['age*male'] = data.age * data.male
+        data = pd.concat([data, enc_sex], axis = 1)
     
+        #   Expand embarked column into dummy variables
         data.embarked = data.embarked.str.lower()
-        
         enc_embark = pd.get_dummies(data.embarked)
-        data = data.join(enc_embark)
-    
-        data.loc[data.fare.isnull(), 'fare'] = data.fare.describe()['50%']
+        data = pd.concat([data, enc_embark], axis = 1)
         
-        data['fare_log'] = np.log(data.fare)
-        
-        data['fam_size'] = data.sibsp + data.parch
-        
-        data['ticket_class'] = data.ticket.str.replace('[0-9]| ', '')
-    
+        #   Process cabin floor
         data['cabin_floor'] = data.cabin.str.replace('[0-9]| ', '').str.get(0).astype('category')
-    
         enc_floor = pd.get_dummies(data.cabin_floor)
-        data = data.join(enc_floor)
+        data = pd.concat([data, enc_floor], axis = 1)
 
-        data.pclass = data.pclass.astype('category')
-        data.sibsp = data.sibsp.astype('category')
-        data.parch = data.parch.astype('category')
-        data.embarked = data.embarked.astype('category')
+        #   Create interaction variables
+        data.loc[(data.fare.isnull()), 'fare'] = data.fare.describe()['50%']
+        data['age*male'] = data.age * data.male
+        data['fare_log'] = np.log(data.fare)
+        data['fam_size'] = data.sibsp + data.parch
+        data['ticket_class'] = data.ticket.str.replace('[0-9]| ', '')
+
+        #   Create interaction variables
+        for col in ['pclass', 'sibsp', 'parch', 'embarked', 'fam_size', 'ticket_class']:
+            data[col] = data[col].astype('category')
                 
-        globals()[data_type + '_tidy'] = data
+        globals()[p_type + '_tidy'] = data
 
-    return globals()[data_type + '_tidy']
+    return globals()[p_type + '_tidy']
 
 #   tidy_data()
+#   tidy_data('test')
+#   tidy_data('eval')
 #   tidy_data().dtypes
-
-def load_combined_tidy():
-    train_tidy = tidy_data('train')
-    y_data = load_y()
-    
-    return pd.concat([train_tidy, y_data], axis = 1)
-    
-    
 

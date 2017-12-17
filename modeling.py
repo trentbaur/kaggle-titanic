@@ -31,19 +31,34 @@ def logreg_sig(p_vars = 'age * male'):
     return results.summary()
 
 #   logreg_sig()
-
 #   logreg_sig('pclass + fare')
     
-def model_age():
-    
-    df = gather_data.load_data()
-    
-    formula = 'Age ~ Sex + Pclass'
-    
-    results = sm.ols(formula, data = df).fit()
-    
-    return results.summary()
 
-#   model_age()
+def build_model_age():
+    
+    if 'predict_age' not in globals():
+        
+        x_train = gather_data.get_data('x_train')
+    
+        formula = 'age ~ sex + pclass'
+    
+        model_age = sm.ols(formula, data = x_train).fit()
+        
+        globals()['predict_age'] = model_age
+        
+    return globals()['predict_age']
+
+#   build_model_age()
+
+def model_age(df):
+    
+    model = build_model_age()
+
+    age_pred = model.predict(df[df.age.isnull()])
+    
+    return age_pred
+    
+
+#   model_age(gather_data.load_x_train())
 
 
