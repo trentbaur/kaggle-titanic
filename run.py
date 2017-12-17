@@ -11,8 +11,16 @@ gather_data.split_data(125)
 #-------------------------------------------------------------------
 #   Create tidy dataset that will be used for analysis
 #-------------------------------------------------------------------
-x_train_thin = gather_data.tidy_data('train')[modeling.COLS_TO_MODEL]
-x_test_thin = gather_data.tidy_data('test')[modeling.COLS_TO_MODEL]
+
+x_train_thin = gather_data.tidy_data('train')
+x_test_thin = gather_data.tidy_data('test')
+y_train = gather_data.get_data('y_train')
+y_test = gather_data.get_data('y_test')
+
+shared_columns = list(set(x_test_thin.columns).intersection(modeling.COLS_TO_MODEL))
+
+x_train_thin = x_train_thin[shared_columns]
+x_test_thin = x_test_thin[shared_columns]
 
 
 #--------------------------------------------------
@@ -23,7 +31,7 @@ from sklearn.linear_model import LogisticRegression
 
 model = LogisticRegression(C = 1)
 
-model.fit(X_train, y_train)
+model.fit(x_train_thin, y_train)
 
 
 
@@ -31,11 +39,8 @@ from sklearn.ensemble import GradientBoostingClassifier
 
 model = GradientBoostingClassifier()
 
-model.fit(X_train, y_train)
+model.fit(x_train_thin, y_train)
 '''
-
-y_train = gather_data.get_data('y_train')
-y_test = gather_data.get_data('y_test')
 
 from sklearn.ensemble import RandomForestClassifier
 

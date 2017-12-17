@@ -73,23 +73,17 @@ def tidy_data(p_type = 'train'):
         enc_age = pd.get_dummies(data.age_bin)
         data = pd.concat([data, enc_age], axis = 1)
     
-        #   Expand sex column into dummy variables
-        enc_sex = pd.get_dummies(data.sex)
-        data = pd.concat([data, enc_sex], axis = 1)
-    
-        #   Expand embarked column into dummy variables
         data.embarked = data.embarked.str.lower()
-        enc_embark = pd.get_dummies(data.embarked)
-        data = pd.concat([data, enc_embark], axis = 1)
-        
-        #   Process cabin floor
+
         data['cabin_floor'] = data.cabin.str.replace('[0-9]| ', '').str.get(0).astype('category')
-        enc_floor = pd.get_dummies(data.cabin_floor)
-        data = pd.concat([data, enc_floor], axis = 1)
+
+        for col in ['pclass', 'sex', 'sibsp', 'parch', 'embarked', 'cabin_floor']:
+            encode = pd.get_dummies(data[col], prefix = col)
+            data = pd.concat([data, encode], axis = 1)
 
         #   Create interaction variables
         data.loc[(data.fare.isnull()), 'fare'] = data.fare.describe()['50%']
-        data['age*male'] = data.age * data.male
+        data['age*male'] = data.age * data.sex_male
         data['fare_log'] = np.log(data.fare)
         data['fam_size'] = data.sibsp + data.parch
         data['ticket_class'] = data.ticket.str.replace('[0-9]| ', '')
@@ -102,7 +96,7 @@ def tidy_data(p_type = 'train'):
 
     return globals()[p_type + '_tidy']
 
-#   tidy_data()
+#   tidy_data().columns
 #   tidy_data('test')
 #   tidy_data('eval')
 #   tidy_data().dtypes

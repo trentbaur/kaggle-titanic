@@ -1,23 +1,22 @@
-import pandas as pd
 import statsmodels.formula.api as sm
 
 import gather_data
 
-COLS_TO_MODEL = ['pclass', 
-                 #'age*class',
+COLS_TO_MODEL = [#'pclass', 
+                 'pclass_1', 'pclass_2', 'pclass_3', 
                  'age',
-                 'sibsp',
-                 'parch',
+                 #'sibsp',
+                 #'parch',
                  'fam_size',
-                 'fare',
-                 #  Embarked dummy variables
-                 'c', 'q', 's',
-                 #  Cabin Floor dummy variables
-                 #'A', 'B', 'C', 'D', 'E', 'F', 'G', 'T',
+                 #'fare',
+                 'sibsp_0', 'sibsp_1', 'sibsp_2', 'sibsp_3', 'sibsp_4', 'sibsp_5', 'sibsp_8',
+                 'parch_0', 'parch_1', 'parch_2', 'parch_3', 'parch_4', 'parch_5', 'parch_6', 
+                 'embarked_c', 'embarked_q', 'embarked_s',
+                 'cabin_floor_A', 'cabin_floor_B', 'cabin_floor_C', 'cabin_floor_D', 'cabin_floor_E', 'cabin_floor_F', 'cabin_floor_G', 'cabin_floor_T',
                  #'age_0_12', 'age_12_18', 'age_18_25', 'age_25_40', 'age_40_60', 'age_60_75'
                  #  Gender dummy variables, placed last to avoid comma-commenting issues
-                 'female',
-                 'male']
+                 'sex_female',
+                 'sex_male']
 
 
 def logreg_sig(p_vars = 'age * male'):
