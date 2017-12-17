@@ -14,7 +14,8 @@ def load_data(data_type = 'train'):
         df = pd.read_csv(FOLDERS['raw'] + data_type + '.csv')
         
         df.columns = [col.lower() for col in df.columns]
-
+        df.loc[df.fare==0.0, 'fare'] = .01
+        
         globals()[data_type + '_raw'] = df
         
     return globals()[data_type + '_raw']
@@ -38,6 +39,9 @@ def split_data(p_random = 125):
 
 
 def get_data(p_name = 'x_train'):
+
+    if p_name == 'x_all':
+        return load_data('train')    
     
     if p_name == 'x_eval':
         return load_data('test')
@@ -90,15 +94,15 @@ def tidy_data(p_type = 'train'):
         data['is_alone'] = (data.fam_size==0).astype(int)
         data['has_cabin'] = (data.cabin.isnull()).astype(int)
         
-        #   Create interaction variables
-        for col in ['pclass', 'sibsp', 'parch', 'embarked', 'fam_size', 'ticket_class']:
+        #   Create categorical variables
+        for col in ['pclass', 'sibsp', 'parch', 'embarked', 'fam_size', 'ticket_class', 'cabin_floor']:
             data[col] = data[col].astype('category')
                 
         globals()[p_type + '_tidy'] = data
 
     return globals()[p_type + '_tidy']
 
-#   tidy_data().columns
+#   sorted(tidy_data().columns)
 #   tidy_data('test')
 #   tidy_data('eval')
 #   tidy_data().dtypes
