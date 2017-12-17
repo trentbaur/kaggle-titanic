@@ -40,6 +40,21 @@ from sklearn.ensemble import GradientBoostingClassifier
 model = GradientBoostingClassifier()
 
 model.fit(x_train_thin, y_train)
+
+
+from sklearn.linear_model import RidgeClassifier
+
+model = RidgeClassifier(alpha = 1, max_iter=100000)
+
+model.fit(x_train_thin, y_train)
+
+
+from sklearn.linear_model import Lasso
+
+model = Lasso(alpha = 1, max_iter=100000)
+
+model.fit(x_train_thin, y_train)
+
 '''
 
 from sklearn.ensemble import RandomForestClassifier
@@ -75,17 +90,16 @@ plotting.show_roc(y_test, model.predict(x_test_thin))
 #   Run test data through model and return results for submitting
 #--------------------------------------------------------------------
 x_eval = gather_data.tidy_data('eval')
-x_eval = x_eval[modeling.COLS_TO_MODEL]
 
-y_eval = model.predict(x_eval)
+y_eval = model.predict(x_eval[shared_columns])
 
 
 """
-res = zip(test.passengerid, y_pred)
+res = zip(x_eval.passengerid, y_eval)
 
 import csv
 
-csvfile = "gbrt.csv"
+csvfile = gather_data.FOLDERS['clean'] + "ridge.csv"
 
 with open(csvfile, "w") as output:
     writer = csv.writer(output, lineterminator='\n')
