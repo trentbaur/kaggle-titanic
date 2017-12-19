@@ -1,9 +1,11 @@
 import pandas as pd
-import gather_data, plotting
+
+from gather_data import get_raw, get_split, get_tidy
+import plotting
 
 def display_nulls():
     
-    train_raw = gather_data.load_data()
+    train_raw = get_raw('train')
     
     #   Explore null values in dataset
     for x in train_raw.columns.values:
@@ -15,12 +17,10 @@ def display_nulls():
             print()
     return
 
-#   display_nulls()
-
 
 def display_counts():
     
-    train_raw = gather_data.load_data()
+    train_raw = get_raw('train')
 
     #   Explore value counts in dataset
     for x in train_raw.columns.values:
@@ -31,12 +31,10 @@ def display_counts():
     
     return
 
-#   display_counts()
-
 
 def display_survival_counts():
     
-    train_raw = gather_data.load_data()
+    train_raw = get_raw('train')
 
     #   Explore survival counts for easily grouped columns
     for x in train_raw.columns.values:
@@ -47,12 +45,12 @@ def display_survival_counts():
     
     return
 
-#   display_survival_counts()
-
 
 def display_age_by(p_group = 'pclass'):
     
-    print(all['age'].groupby([all[p_group], all['survived']]).mean())
+    train_raw = get_raw()
+    
+    print(train_raw['age'].groupby([train_raw[p_group], train_raw['survived']]).mean())
 
     return
 
@@ -73,7 +71,7 @@ def explore_data():
     
     print('--------------------\n')
     
-    display_age_by
+    display_age_by()
     
     plotting.show_pairs_plot()
     

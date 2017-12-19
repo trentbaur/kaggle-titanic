@@ -2,15 +2,17 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-sns.set(style="whitegrid", color_codes=True)
 
 from sklearn.metrics import roc_curve, auc
 
-import gather_data
+from gather_data import get_raw, get_split, get_tidy
+
+
+sns.set(style="whitegrid", color_codes=True)
 
 def show_pairs_plot():
 
-    train_raw = gather_data.load_data()
+    train_raw = get_raw('train')
 
     cols = ['pclass', 'age', 'sibsp', 'parch', 'fare']
     
@@ -23,7 +25,8 @@ def show_pairs_plot():
 #   show_pairs_plot()
 
 def show_boxplot_log_fare():
-    df = gather_data.load_combined_tidy()
+    
+    df = get_raw('train')
 
     fig = plt.figure(1, figsize=(9, 6))
 
@@ -44,7 +47,7 @@ def show_boxplot_log_fare():
 
 def show_barplot_survival(p_var = 'cabin_floor'):
     
-    df = gather_data.load_combined_tidy()
+    df = get_tidy('train')
     
     pd.crosstab(df['survived'], df[p_var]).T.plot(kind='bar')
     
@@ -56,7 +59,7 @@ def show_barplot_survival(p_var = 'cabin_floor'):
 
 def show_dot_plot(p_x = 'cabin_floor', p_y = 'fare'):
     
-    df = gather_data.load_combined_tidy()
+    df = get_tidy('train')
     
     sns.stripplot(x = p_x,
                   y = p_y,

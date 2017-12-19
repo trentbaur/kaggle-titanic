@@ -1,33 +1,22 @@
-import gather_data, plotting, modeling
 import numpy as np
 
-#------------------------------------------------------
-#   Load raw data and split between training and dev
-#------------------------------------------------------
-train_raw = gather_data.load_data('train')
-
-gather_data.split_data(125)
+from gather_data import get_split, get_tidy
+import plotting
+import modeling
 
 
-#-------------------------------------------------------------------
-#   Create tidy dataset that will be used for analysis
-#-------------------------------------------------------------------
+x_train_tidy = get_tidy('train')
+x_test_tidy = get_tidy('test')
 
-x_train_tidy = gather_data.tidy_data('train')
-x_test_tidy = gather_data.tidy_data('test')
+y_train = get_split('y_train')
+y_test = get_split('y_test')
 
-y_train = gather_data.get_data('y_train')
-y_test = gather_data.get_data('y_test')
-
-shared_columns = list(set(x_test_tidy.columns).intersection(modeling.COLS_TO_MODEL))
+shared_columns = list(set(x_train_tidy.columns).intersection(set(x_test_tidy.columns)).intersection(modeling.COLS_TO_MODEL))
 
 x_train_thin = x_train_tidy[shared_columns]
 x_test_thin = x_test_tidy[shared_columns]
 
 
-#   Just to see how neural network handles more data
-#x_train_tidy = gather_data.tidy_data('all')
-#y_train = x_train_tidy.survived
 
 #--------------------------------------------------
 #   Prepare model and train on data
@@ -72,6 +61,8 @@ model = RandomForestClassifier(n_estimators = 200,
 
 model.fit(x_train_thin, y_train)
 
+y_train_pred = model.predict(x_train_thin)
+y_test_pred = model.predict(x_test_thin)
 
 sorted(list(zip(shared_columns, model.feature_importances_)), key=lambda x: x[0])
 
@@ -82,21 +73,21 @@ sorted(list(zip(shared_columns, model.feature_importances_)), key=lambda x: x[0]
 from sklearn.metrics import classification_report
 
 print(classification_report (y_train,
-                             model.predict(x_train_thin),
+                             y_train_pred,
                              target_names = ['Survived', 'Died']))
 
 print(classification_report (y_test,
-                             model.predict(x_test_thin),
+                             y_test_pred,
                              target_names = ['Survived', 'Died']))
 
-plotting.show_roc(y_train, model.predict(x_train_thin))
-plotting.show_roc(y_test, model.predict(x_test_thin))
+plotting.show_roc(y_train, y_train_pred)
+plotting.show_roc(y_test, y_test_pred)
 
 
 #--------------------------------------------------------------------
 #   Run test data through model and return results for submitting
 #--------------------------------------------------------------------
-x_eval = gather_data.tidy_data('eval')
+x_eval = get_tidy('eval')
 
 eval_shared_columns = sorted(list(set(x_eval.columns).intersection(modeling.COLS_TO_MODEL)))
 
@@ -126,6 +117,12 @@ with open(csvfile, "w") as output:
 #   1) X_train, X_test and X_eval all matching columns
 #   2) y_train, y_test
 #--------------------------------------------------------------------
+#   Just to see how neural network handles more data
+#x_train_tidy = gather_data.tidy_data('all')
+#y_train = x_train_tidy.survived
+
+
+
 eval_shared_columns = set(x_eval.columns).intersection(modeling.COLS_TO_MODEL).intersection(set(x_train_tidy.columns))
 
 np.savez(gather_data.FOLDERS['clean'] + 'titanic',

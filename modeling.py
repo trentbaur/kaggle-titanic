@@ -1,10 +1,8 @@
-import statsmodels.formula.api as sm
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, classification_report, confusion_matrix
 import pandas as pd
 import numpy as np
 import pdb
 
-import gather_data
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, classification_report, confusion_matrix
 
 
 COLS_TO_MODEL = ['pclass', 
@@ -30,31 +28,6 @@ COLS_TO_MODEL = ['pclass',
 
 #COLS_TO_MODEL = ['fam_size', 'pclass_3', 'cabin_floor_A', 'pclass_1', 'cabin_floor_C', 'parch', 'sibsp', 'age_12_18', 'sex_male', 'embarked_c', 'parch_1', 'fare_log', 'cabin_floor_E', 'cabin_floor_B', 'has_cabin', 'embarked_s', 'pclass', 'age', 'age_18_25', 'cabin_floor_D']
 
-def build_model_age():
-    
-    if 'predict_age' not in globals():
-        
-        x_train = gather_data.get_data('x_train')
-    
-        formula = 'age ~ sex + pclass'
-    
-        model_age = sm.ols(formula, data = x_train).fit()
-        
-        globals()['predict_age'] = model_age
-        
-    return globals()['predict_age']
-
-#   build_model_age()
-
-def model_age(df):
-    
-    model = build_model_age()
-
-    age_pred = model.predict(df[df.age.isnull()])
-    
-    return np.ceil(age_pred)
-    
-#   model_age(gather_data.get_data())
 
 
 #-------------------------
