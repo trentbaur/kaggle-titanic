@@ -1,6 +1,7 @@
 import pandas as pd
 
-from gather_data import get_raw, get_split, get_tidy
+from gather_data import get_raw
+
 import plotting
 
 def display_nulls():
@@ -79,15 +80,3 @@ def explore_data():
 
 #   explore_data()
 
-
-'''
-name_stub = 'Master'
-
-train[train.Name.str.contains(name_stub)]
-
-import matplotlib.pyplot as plt
-plt.hist(train[(train.Name.str.contains('Mrs')) & (train.Age.notnull())].Age, bins=10)
-
-plt.hist(train[(train.age > 0)].fare, bins=10)
-
-'''

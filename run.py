@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from gather_data import get_split, get_tidy
 import plotting
@@ -11,6 +12,8 @@ x_test_tidy = get_tidy('test')
 y_train = get_split('y_train')
 y_test = get_split('y_test')
 
+#   Test set could randomly not have certain dummy variables
+#   Ensure we only work with the intersection of columns
 shared_columns = list(set(x_train_tidy.columns).intersection(set(x_test_tidy.columns)).intersection(modeling.COLS_TO_MODEL))
 
 x_train_thin = x_train_tidy[shared_columns]
@@ -21,67 +24,102 @@ x_test_thin = x_test_tidy[shared_columns]
 #--------------------------------------------------
 #   Prepare model and train on data
 #--------------------------------------------------
-'''
-from sklearn.linear_model import LogisticRegression
-
-model = LogisticRegression(C = 1)
-
-model.fit(x_train_thin, y_train)
-
-
-
 from sklearn.ensemble import GradientBoostingClassifier
 
-model = GradientBoostingClassifier(n_estimators = 500,
-                                   learning_rate = .05)
+from sklearn.metrics import classification_report
 
-model.fit(x_train_thin, y_train)
+from sklearn.model_selection import cross_val_score
 
-
-from sklearn.linear_model import RidgeClassifier
-
-model = RidgeClassifier(alpha = 1, max_iter=100000)
-
-model.fit(x_train_thin, y_train)
+model = GradientBoostingClassifier()
 
 
-from sklearn.linear_model import Lasso
+z1 = modeling.cross_validate(model, x_train_thin, y_train, 'n_estimators', range(100, 101))
+z1['param'] = 'baseline'
 
-model = Lasso(alpha = 1, max_iter=100000)
+z2 = modeling.cross_validate(model, x_train_thin, y_train, 'n_estimators', range(50, 400, 50))
+z3 = modeling.cross_validate(model, x_train_thin, y_train, 'learning_rate', np.arange(5, 21, 2.5) / 100)
+z4 = modeling.cross_validate(model, x_train_thin, y_train, 'subsample', np.arange(7, 11) / 10)
+z5 = modeling.cross_validate(model, x_train_thin, y_train, 'max_features', range(5, 13))
 
-model.fit(x_train_thin, y_train)
 
-'''
+frames = [z1, 
+          z2[z2.index==z2['mean'].idxmax()],
+          z3[z3.index==z3['mean'].idxmax()],
+          z4[z4.index==z4['mean'].idxmax()],
+          z5[z5.index==z5['mean'].idxmax()]
+          ]
 
-from sklearn.ensemble import RandomForestClassifier
+pd.concat(frames)
 
-model = RandomForestClassifier(n_estimators = 200,
-                               max_features = 3,
-                               random_state = 0)
+        
+#z2[z2.index==z2['mean'].idxmax()]
+
+
+
+
+
+for s in range(4, 12):
+    
+    print(s)
+
+    model = GradientBoostingClassifier(n_estimators = 400,
+                                       learning_rate = .005,
+                                       subsample = .85,
+                                       max_features = 8,
+                                       random_state = 125)
+    
+    scores = cross_val_score(model, x_train_thin, y_train, cv = 5)
+    
+    print(scores, scores.mean())
+    
+
+
+
+
+
+
+
+
+
+
+model = GradientBoostingClassifier(n_estimators = 400,
+                                   subsample = .85,
+                                   learning_rate = .005)
 
 model.fit(x_train_thin, y_train)
 
 y_train_pred = model.predict(x_train_thin)
 y_test_pred = model.predict(x_test_thin)
 
-sorted(list(zip(shared_columns, model.feature_importances_)), key=lambda x: x[0])
+
+
+#z = modeling.backward_feature_elimination(x_train_thin, y_train, model)
 
 
 #--------------------------------------------------
 #   Generate metrics to evaluate model performance
 #--------------------------------------------------
-from sklearn.metrics import classification_report
-
 print(classification_report (y_train,
                              y_train_pred,
                              target_names = ['Survived', 'Died']))
+
+print(model.score(x_train_thin, y_train))
+
 
 print(classification_report (y_test,
                              y_test_pred,
                              target_names = ['Survived', 'Died']))
 
+print(model.score(x_test_thin, y_test))
+
 plotting.show_roc(y_train, y_train_pred)
 plotting.show_roc(y_test, y_test_pred)
+
+
+
+
+
+
 
 
 #--------------------------------------------------------------------
