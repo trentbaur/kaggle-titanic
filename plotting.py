@@ -70,7 +70,7 @@ def show_hist(p_group = 'sibsp', p_x = 'age'):
     return
 #   show_hist(p_group = 'pclass', p_x = 'age')
 
-
+    
 #---------------------------------------
 #   Visualizations for transformed data
 #---------------------------------------
@@ -99,12 +99,52 @@ def show_dot_plot(p_x = 'cabin_floor', p_y = 'fare'):
     
     return
 #   show_dot_plot()
-#   show_dot_plot('sibsp', 'age')
+#   show_dot_plot('pclass', 'fare_gen')
 
 
 #---------------------------------------
 #   Visualizations for modeling results
 #---------------------------------------
+def show_barplot_cv(results, param = 'subsample'):
+    
+    fig = plt.figure()
+    
+    g = plt.barh(np.arange(results[param].shape[0]),
+             results[param]['mean'],
+             xerr = [results[param]['mean'] - results[param]['min'],
+                     results[param]['max'] - results[param]['mean']],
+             align='center',
+             color='blue',
+             ecolor='black')
+
+    g[results[param]['mean'].idxmax()].set_color('green')
+    
+    plt.axis([results[param]['min'].min() * .98,
+              results[param]['max'].max() * 1.02,
+              -1,
+              results[param].shape[0]])
+    
+    plt.yticks(np.arange(results[param].shape[0]), results[param].value)
+    plt.xlabel(param)
+    plt.title('Cross Validation')
+    
+    return
+
+#show_barplot_cv(cv_results, 'n_estimators')
+#show_barplot_cv(cv_results, 'subsample')
+#show_barplot_cv(cv_results, 'learning_rate')
+
+
+def show_barplot_all(results):
+    
+    for k in results.keys():
+        show_barplot_cv(results, k)
+    
+    return
+
+#show_barplot_all(cv_results)
+
+
 def show_roc(y_dev, y_pred):
     
     fpr, tpr, _ = roc_curve(y_dev, y_pred)

@@ -4,9 +4,88 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 import statsmodels.formula.api as sm
 
+
 FOLDERS = {'raw': 'data_raw/',
            'clean': 'data_clean/'}
 
+COLS_TO_MODEL = [#'pclass', 
+                 'pclass_1', 'pclass_2', 'pclass_3', 
+                 #'age',
+                 'age_gen',
+                 #'age_norm',
+                 #'age_0_12', 'age_12_18', 'age_18_25', 'age_25_40', 'age_40_60', 'age_60_75',
+                 #'sibsp',
+                 'sibsp_0', 'sibsp_1', 'sibsp_2', 'sibsp_3', 'sibsp_4', 'sibsp_5', 'sibsp_8',
+                 #'parch',
+                 'parch_0', 'parch_1', 'parch_2', 'parch_3', #'parch_4', 'parch_5', 'parch_6', 
+                 'fam_size',
+                 #'fare',
+                 'fare_gen',
+                 #'fare_log',
+                 #'fare_norm',
+                 #'is_alone',
+                 #'has_cabin',
+                 #'embarked',
+                 'embarked_c', 'embarked_q', 'embarked_s',
+                 #'cabin_floor',
+                 'cabin_floor_A', 'cabin_floor_B', 'cabin_floor_C', 'cabin_floor_D', 'cabin_floor_E', 'cabin_floor_F', 'cabin_floor_G', 'cabin_floor_T',
+                 #  Gender dummy variables, placed last to avoid comma-commenting issues
+                 'sex_female',
+                 'sex_male']
+
+    
+#--------------------------------------
+#   Modeling Functions for Tidy Data
+#--------------------------------------
+def build_model_age():
+    
+    x_train = get_split('x_train')
+    
+    if 'predict_age' not in globals():
+            
+        formula = 'age ~ sex + pclass'
+    
+        model_age = sm.ols(formula, data = x_train).fit()
+        
+        globals()['predict_age'] = model_age
+        
+    return globals()['predict_age']
+
+def model_age(df):
+    
+    model = build_model_age()
+
+    age_pred = model.predict(df)
+    
+    return np.ceil(age_pred)
+
+
+def build_model_fare():
+        
+    if 'predict_fare' not in globals():
+
+        x_train = get_split('x_train')
+        
+        formula = 'fare ~ pclass + sibsp + parch'
+    
+        model_fare = sm.ols(formula, data = x_train).fit()
+        
+        globals()['predict_fare'] = model_fare
+        
+    return globals()['predict_fare']
+
+def model_fare(df):
+    
+    model = build_model_fare()
+
+    fare_pred = model.predict(df)
+    
+    return round(fare_pred, 2)
+    
+
+#-----------------------------
+#   Data retrieval functions
+#-----------------------------
 def get_raw(data_type = 'train'):
     
     filename = data_type + '_raw'
@@ -18,10 +97,6 @@ def get_raw(data_type = 'train'):
         df = pd.read_csv(FOLDERS['raw'] + data_type + '.csv')
         
         df.columns = [col.lower() for col in df.columns]
-        
-        #   Placing here as a quick a dirty way of avoiding log(0)
-        #   Should come up with better approach to interpolating fare
-        df.loc[df.fare==0.0, 'fare'] = .01
         
         globals()[filename] = df
         
@@ -45,8 +120,6 @@ def get_split(dataname = 'x_train'):
     
     return globals()[dataname]
 
-#   get_split()
-
 
 #----------------------------------------------------------
 #   Build tidy dataset
@@ -55,13 +128,18 @@ def get_split(dataname = 'x_train'):
 #----------------------------------------------------------
 def tidy_data(data):
     
-    #   Fill in missing age values based on model
-    data.loc[data.age.isnull(), 'age'] = model_age(data)
+    #   Fill in missing age values based on linear model
+    data['age_gen'] = data.age
+    data.loc[data.age_gen.isnull(), 'age_gen'] = model_age(data[data.age_gen.isnull()])
+
+    #   Fill in missing fare values based on linear model
+    data['fare_gen'] = data.fare
+    data.loc[(data.fare == 0) | (data.fare.isnull()), 'fare_gen'] = model_fare(data[(data.fare == 0) | (data.fare.isnull())])
 
     #   Place ages into bins    
     bins = [0, 12, 18, 25, 40, 60, 75]
    
-    data['age_bin'] = pd.cut(data['age'], bins, labels = ['age_0_12', 'age_12_18', 'age_18_25', 'age_25_40', 'age_40_60', 'age_60_75'])
+    data['age_bin'] = pd.cut(data['age_gen'], bins, labels = ['age_0_12', 'age_12_18', 'age_18_25', 'age_25_40', 'age_40_60', 'age_60_75'])
     enc_age = pd.get_dummies(data.age_bin)
     data = pd.concat([data, enc_age], axis = 1)
 
@@ -74,16 +152,17 @@ def tidy_data(data):
         data = pd.concat([data, encode], axis = 1)
 
     #   Create interaction variables
-    data.loc[(data.fare.isnull()), 'fare'] = data.fare.describe()['50%']
-    data['age*male'] = data.age * data.sex_male
-    data['fare_log'] = np.log(data.fare)
+    data['age_norm'] = data.age_gen / data.age_gen.max()
+    data['age*male'] = data.age_gen * data.sex_male
+    data['fare_log'] = np.log(data.fare_gen)
+    data['fare_norm'] = data.fare_gen / data.fare_gen.max()
     data['fam_size'] = data.sibsp + data.parch
     data['ticket_class'] = data.ticket.str.replace('[0-9]| ', '')
     data['is_alone'] = (data.fam_size==0).astype(int)
     data['has_cabin'] = (data.cabin.isnull()).astype(int)
     
     #   Create categorical variables
-    for col in ['pclass', 'sibsp', 'parch', 'embarked', 'fam_size', 'ticket_class', 'cabin_floor']:
+    for col in ['pclass', 'parch', 'sibsp', 'fam_size', 'embarked', 'ticket_class', 'cabin_floor']:
         data[col] = data[col].astype('category')
 
     return data
@@ -104,6 +183,9 @@ def get_tidy(p_type = 'train'):
 
         tidy = tidy_data(df.copy())
         
+#        if p_type != 'train':
+#            add_missing_columns(tidy)
+            
         globals()[filename] = tidy
         
     return globals()[filename]
@@ -114,31 +196,16 @@ def get_tidy(p_type = 'train'):
 #   get_tidy().dtypes
 
 
-def build_model_age():
+def add_missing_columns(df):
+    #   For the model's sake, ensure that all of the dummy variables get created
+    #   in both the test and eval datasets. Initialize to zero
+    train_cols = get_tidy('train').columns
     
-    x_train = get_split('x_train')
+    missing = [col for col in train_cols if col not in df.columns]
     
-    if 'predict_age' not in globals():
-            
-        formula = 'age ~ sex + pclass'
+    for x in missing:
+        print('Adding ' + x)
+        df[x] = 0
     
-        model_age = sm.ols(formula, data = x_train).fit()
-        
-        globals()['predict_age'] = model_age
-        
-    return globals()['predict_age']
+    return
 
-#   build_model_age()
-
-def model_age(df):
-    
-    model = build_model_age()
-
-    age_pred = model.predict(df[df.age.isnull()])
-    
-    return np.ceil(age_pred)
-    
-#   model_age(get_split('x_train'))
-
-
-    
