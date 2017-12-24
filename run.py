@@ -1,7 +1,6 @@
-import numpy as np
-import pandas as pd
+import csv
 
-from gather_data import get_split, get_tidy, COLS_TO_MODEL
+from gather_data import get_split, get_tidy, COLS_TO_MODEL, FOLDERS
 import plotting
 import modeling
 
@@ -11,26 +10,34 @@ x_test_tidy = get_tidy('test')
 y_train = get_split('y_train')
 y_test = get_split('y_test')
 
-#   x_train_tidy COULD be missing a dummy column that test_tidy or eval_tidy
+#   x_train_tidy COULD be missing a dummy column that test_tidy or eval_tidy have
 #       but we can't consider those fields anyways so exclude them
 #   test_tidy and eval_tidy will be padded with any missing columns that train_tidy has
-#x_train_thin = x_train_tidy[[x for x in COLS_TO_MODEL if x in x_train_tidy.columns]]
-#x_test_thin = x_test_tidy[x_train_thin.columns.values]
-
 shared_columns = sorted(list(set(x_train_tidy.columns).intersection(set(x_test_tidy.columns)).intersection(COLS_TO_MODEL)))
 
 x_train_thin = x_train_tidy[shared_columns]
 x_test_thin = x_test_tidy[shared_columns]
 
+
 #--------------------------------------------------
 #   Prepare model and train on data
 #--------------------------------------------------
 from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
 
 model = GradientBoostingClassifier(n_estimators = 50,
-                                   learning_rate = .025,
-                                   subsample = .75,
-                                   max_features = 10)
+                                   learning_rate = .05,
+                                   subsample = .8,
+                                   max_features = 13)
+
+# model = SVC(C = 100000000, gamma = 1e-08)
+
+# model= RandomForestClassifier(n_estimators = 90,
+#                               max_features = 15)
+
+#   modeling.backward_feature_elimination(model, x_train_thin, y_train)
+
 
 model.fit(x_train_thin, y_train)
 
@@ -56,11 +63,8 @@ print(classification_report (y_test,
 
 print(accuracy_score(y_test, y_test_pred))
 
-"""
 plotting.show_roc(y_train, y_train_pred)
 plotting.show_roc(y_test, y_test_pred)
-"""
-
 
 
 #--------------------------------------------------------------------
@@ -68,45 +72,21 @@ plotting.show_roc(y_test, y_test_pred)
 #--------------------------------------------------------------------
 x_eval = get_tidy('eval')
 
-#eval_shared_columns = sorted(list(set(x_eval.columns).intersection(set(x_train_thin.columns)).intersection(COLS_TO_MODEL)))
-eval_shared_columns = sorted(list(set(x_eval.columns).intersection(COLS_TO_MODEL)))
+eval_shared_columns = sorted(list(set(x_train_tidy.columns).intersection(set(x_eval.columns).intersection(COLS_TO_MODEL))))
 
 X = x_eval[eval_shared_columns]
 
 y_eval = model.predict(X)
 
 y_eval.sum()
-
-"""
-pd.set_option('display.max_columns', 60)
-
-X[X.fare.isnull()]
-
-X[X.isin([np.nan, np.inf, -np.inf]).any(1)]
-
-X.min()
-X.max()
-x_eval[x_eval.age.isnull()]
-
-X[X.age_norm <= 0]
-print(X.shape)
-index = 0
-for i in range(0, X.shape[1]):
-    if not np.isfinite(X.iloc[i]):
-        print(i)
-    index +=1
-
-""" 
     
 
-"""
-from gather_data import FOLDERS
-
+#----------------------------------------------
+#   Save eval predictions for submission
+#----------------------------------------------
 res = zip(x_eval.passengerid, y_eval)
 
-import csv
-
-csvfile = FOLDERS['clean'] + "cross_val7.csv"
+csvfile = FOLDERS['clean'] + "cv_granular.csv"
 
 with open(csvfile, "w") as output:
     writer = csv.writer(output, lineterminator='\n')
@@ -115,7 +95,7 @@ with open(csvfile, "w") as output:
         id = line[0]
         value = line[1]
         writer.writerow([id, value])
-"""        
+
 
 #--------------------------------------------------------------------
 #   Output data to be used by neural network. I need:
@@ -128,7 +108,9 @@ with open(csvfile, "w") as output:
 
 
 """
-eval_shared_columns = set(x_eval.columns).intersection(modeling.COLS_TO_MODEL).intersection(set(x_train_tidy.columns))
+import numpy as np
+
+eval_shared_columns = set(x_eval.columns).intersection(COLS_TO_MODEL).intersection(set(x_train_tidy.columns))
 
 np.savez(gather_data.FOLDERS['clean'] + 'titanic',
          x_train = x_train_tidy[list(eval_shared_columns)],

@@ -183,8 +183,8 @@ def get_tidy(p_type = 'train'):
 
         tidy = tidy_data(df.copy())
         
-#        if p_type != 'train':
-#            add_missing_columns(tidy)
+        if p_type != 'train':
+            add_missing_columns(tidy)
             
         globals()[filename] = tidy
         
@@ -193,7 +193,6 @@ def get_tidy(p_type = 'train'):
 #   get_tidy('train')
 #   get_tidy('test')
 #   get_tidy('eval')
-#   get_tidy().dtypes
 
 
 def add_missing_columns(df):

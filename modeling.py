@@ -1,6 +1,6 @@
 import pandas as pd
 
-from sklearn.metrics import f1_score
+from sklearn.metrics import accuracy_score
 from sklearn.model_selection import cross_val_score
 
 import plotting
@@ -16,13 +16,13 @@ def backward_feature_elimination(model, x, y):
     #   Initialize storage object with full set of columns
     features = x.columns
 
-    while len(features) > 4:
+    while len(features) > getattr(model, 'max_features'):
         print('Feature Count: {}'.format(len(features)))
         
         #   Run model
         model.fit(x[features], y)
 
-        score = f1_score(y, model.predict(x[features]), average="macro")
+        score = accuracy_score(y, model.predict(x[features]))
         
         #   Retrieve feature importance and store values
         values = dict(zip(features, model.feature_importances_))
@@ -48,7 +48,7 @@ def cross_validate(model, x, y, param = 'n_estimators', n_range = range(1,2), me
     
     for val in n_range:
         
-        print(val)
+        print(param + ': ' + str(val))
         
         setattr(model, param, val)
         
@@ -57,60 +57,40 @@ def cross_validate(model, x, y, param = 'n_estimators', n_range = range(1,2), me
         all_scores.append((param, val, scores.mean(), scores.std(), scores.min(), scores.max()))
     
     return pd.DataFrame(all_scores, columns = ['param', 'value', 'mean', 'std', 'min', 'max'])
-        
-        
+
+
 def cross_all(model, x, y, params, metric = 'accuracy'):
     
-    best = pd.DataFrame()
-
-    baseline = cross_validate(model, x, y, 'n_estimators', range(100, 101))
-    baseline['param'] = 'baseline'
-
-    best = best.append(baseline)
-
-    cv_results = {}
-
-    for k in params:
-        results = cross_validate(model, x, y, k, params[k])
+    while len(params) > 0:
         
-        cv_results[k] = results
+        cv_best = pd.DataFrame()
+        cv_results = {}
+    
+        for k in params:
+            results = cross_validate(model, x, y, k, params[k])
+            
+            cv_results[k] = results
+            
+            cv_best = cv_best.append(results[results.index==results['mean'].idxmax()])
         
-        best = best.append(results[results.index==results['mean'].idxmax()])
-    
-    #   Display all four params
-    plotting.show_barplot_all(cv_results)
+        #   Display all four params
+        #plotting.show_barplot_all(cv_results)
+        
+        cv_best.reset_index(inplace = True)
+        
+        #   Select best param and set in model. Remove from params
+        param, value = cv_best.loc[cv_best.index == cv_best['mean'].idxmax(), ['param', 'value']].values.ravel()
+        
+        if param in ('max_features', 'n_estimators'):
+            value = int(value)
+            
+        print(cv_best)
+        print(param)
+        print(value)
+        
+        setattr(model, param, value)
+        
+        del params[param]
+        
+    return model
 
-    #   Select best param and set in model. Remove from params
-    print(best)
-    
-    return best
-"""
-
-
-    
-    
-    
-from sklearn.linear_model import LogisticRegression
-from sklearn.linear_model import RidgeClassifier
-from sklearn.linear_model import Lasso
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.ensemble import GradientBoostingClassifier
-
-
-
-
-model = LogisticRegression(C = 1)
-
-model = GradientBoostingClassifier()
-
-model = GradientBoostingClassifier(n_estimators = 500,
-                                   learning_rate = .05)
-
-model = RidgeClassifier(alpha = 1, max_iter=100000)
-
-model = Lasso(alpha = 1, max_iter=100000)
-
-model = RandomForestClassifier(n_estimators = 200,
-                               max_features = 3,
-                               random_state = 0)
-"""
