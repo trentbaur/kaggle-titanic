@@ -25,10 +25,11 @@ from sklearn.ensemble import GradientBoostingClassifier
 
 model = GradientBoostingClassifier()
 
-params = {'n_estimators': range(25, 200, 25),
-          'learning_rate': np.arange(.025, .2, .025),
+params = {'n_estimators': range(20, 150, 10),
+          'learning_rate': np.arange(.02, .1, .01),
           'subsample': np.arange(7, 10.1, .5) / 10,
-          'max_features': range(5, 16)}
+          'max_features': range(4, len(x_train_thin.columns)),
+          'max_depth': range(2, 10)}
 
 model = modeling.cross_all(model, x_train_thin, y_train, params)
 

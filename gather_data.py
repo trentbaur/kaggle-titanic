@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 import statsmodels.formula.api as sm
 
 
@@ -11,26 +12,31 @@ FOLDERS = {'raw': 'data_raw/',
 COLS_TO_MODEL = [#'pclass', 
                  'pclass_1', 'pclass_2', 'pclass_3', 
                  #'age',
-                 'age_gen',
+                 #'age_gen',
                  #'age_norm',
-                 #'age_0_12', 'age_12_18', 'age_18_25', 'age_25_40', 'age_40_60', 'age_60_75',
+                 'age_scaled',
+                 #'age_0_16', 'age_16_25', 'age_25_40', 'age_40_60', 'age_60_75',
                  #'sibsp',
-                 'sibsp_0', 'sibsp_1', 'sibsp_2', 'sibsp_3', 'sibsp_4', 'sibsp_5', 'sibsp_8',
+                 #'sibsp_0', 'sibsp_1', 'sibsp_2', 'sibsp_3', 'sibsp_4', 'sibsp_5', 'sibsp_8',
                  #'parch',
-                 'parch_0', 'parch_1', 'parch_2', 'parch_3', #'parch_4', 'parch_5', 'parch_6', 
-                 'fam_size',
+                 #'parch_0', 'parch_1', 'parch_2', 'parch_3', 'parch_4', 'parch_5', 'parch_6', 
+                 #'fam_size',
+                 'fam_size_1', 'fam_size_2', 'fam_size_3', 'fam_size_4', 'fam_size_5', 'fam_size_6', 'fam_size_7', 'fam_size_8', 'fam_size_11',
                  #'fare',
-                 'fare_gen',
+                 #'fare_gen',
                  #'fare_log',
                  #'fare_norm',
+                 'fare_scaled',
                  #'is_alone',
                  #'has_cabin',
                  #'embarked',
+                 #'name_len',
+                 'name_scaled',
                  'embarked_c', 'embarked_q', 'embarked_s',
                  #'cabin_floor',
-                 'cabin_floor_A', 'cabin_floor_B', 'cabin_floor_C', 'cabin_floor_D', 'cabin_floor_E', 'cabin_floor_F', 'cabin_floor_G', 'cabin_floor_T',
+                 #'cabin_floor_A', 'cabin_floor_B', 'cabin_floor_C', 'cabin_floor_D', 'cabin_floor_E', 'cabin_floor_F', 'cabin_floor_G', 'cabin_floor_T',
                  #  Gender dummy variables, placed last to avoid comma-commenting issues
-                 'sex_female',
+                 #'sex_female',
                  'sex_male']
 
     
@@ -43,7 +49,7 @@ def build_model_age():
     
     if 'predict_age' not in globals():
             
-        formula = 'age ~ sex + pclass'
+        formula = 'age ~ pclass + sibsp + parch'
     
         model_age = sm.ols(formula, data = x_train).fit()
         
@@ -137,33 +143,37 @@ def tidy_data(data):
     data.loc[(data.fare == 0) | (data.fare.isnull()), 'fare_gen'] = model_fare(data[(data.fare == 0) | (data.fare.isnull())])
 
     #   Place ages into bins    
-    bins = [0, 12, 18, 25, 40, 60, 75]
+    bins = [0, 16, 25, 40, 60, 75]
    
-    data['age_bin'] = pd.cut(data['age_gen'], bins, labels = ['age_0_12', 'age_12_18', 'age_18_25', 'age_25_40', 'age_40_60', 'age_60_75'])
+    data['age_bin'] = pd.cut(data['age_gen'], bins, labels = ['age_0_16', 'age_16_25', 'age_25_40', 'age_40_60', 'age_60_75'])
     enc_age = pd.get_dummies(data.age_bin)
     data = pd.concat([data, enc_age], axis = 1)
 
+    data.loc[data.embarked.isnull(), 'embarked'] = 'c'
     data.embarked = data.embarked.str.lower()
 
     data['cabin_floor'] = data.cabin.str.replace('[0-9]| ', '').str.get(0).astype('category')
 
-    for col in ['pclass', 'sex', 'sibsp', 'parch', 'embarked', 'cabin_floor']:
-        encode = pd.get_dummies(data[col], prefix = col)
-        data = pd.concat([data, encode], axis = 1)
-
     #   Create interaction variables
     data['age_norm'] = data.age_gen / data.age_gen.max()
-    data['age*male'] = data.age_gen * data.sex_male
-    data['fare_log'] = np.log(data.fare_gen)
     data['fare_norm'] = data.fare_gen / data.fare_gen.max()
-    data['fam_size'] = data.sibsp + data.parch
+    data['fare_log'] = np.log(data.fare_gen)
+    data['fam_size'] = data.sibsp + data.parch + 1
     data['ticket_class'] = data.ticket.str.replace('[0-9]| ', '')
     data['is_alone'] = (data.fam_size==0).astype(int)
     data['has_cabin'] = (data.cabin.isnull()).astype(int)
-    
-    #   Create categorical variables
-    for col in ['pclass', 'parch', 'sibsp', 'fam_size', 'embarked', 'ticket_class', 'cabin_floor']:
-        data[col] = data[col].astype('category')
+    data['name_len'] = data.name.apply(lambda x: len(x))
+
+    #   Scale age and fare using StandardScaler
+    std_scale = StandardScaler().fit(data[['age_gen', 'fare_gen', 'name_len']])
+    data['age_scaled'] = 0
+    data['fare_scaled'] = 0
+    data['name_scaled'] = 0
+    data[['age_scaled', 'fare_scaled', 'name_scaled']] = std_scale.transform(data[['age_gen', 'fare_gen', 'name_len']])
+
+    for col in ['pclass', 'sex', 'sibsp', 'parch', 'fam_size', 'embarked', 'cabin_floor']:
+        encode = pd.get_dummies(data[col], prefix = col)
+        data = pd.concat([data, encode], axis = 1)
 
     return data
 

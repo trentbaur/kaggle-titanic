@@ -27,9 +27,10 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 
 model = GradientBoostingClassifier(n_estimators = 50,
-                                   learning_rate = .05,
-                                   subsample = .8,
-                                   max_features = 13)
+                                   learning_rate = .025,
+                                   subsample = .9,
+                                   max_features = 6,
+                                   max_depth = 7)
 
 # model = SVC(C = 100000000, gamma = 1e-08)
 
@@ -86,7 +87,7 @@ y_eval.sum()
 #----------------------------------------------
 res = zip(x_eval.passengerid, y_eval)
 
-csvfile = FOLDERS['clean'] + "cv_granular.csv"
+csvfile = FOLDERS['clean'] + "scaled.csv"
 
 with open(csvfile, "w") as output:
     writer = csv.writer(output, lineterminator='\n')
