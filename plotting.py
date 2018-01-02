@@ -69,6 +69,7 @@ def show_hist(p_group = 'sibsp', p_x = 'age'):
     
     return
 #   show_hist(p_group = 'pclass', p_x = 'age')
+#   show_hist(p_group = 'sibsp', p_x = 'age')
 
     
 #---------------------------------------
@@ -99,7 +100,7 @@ def show_dot_plot(p_x = 'cabin_floor', p_y = 'fare'):
     
     return
 #   show_dot_plot()
-#   show_dot_plot('pclass', 'fare_gen')
+#   show_dot_plot('embarked', 'pclass')
 
 
 #---------------------------------------

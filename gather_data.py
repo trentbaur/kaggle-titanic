@@ -9,49 +9,32 @@ import statsmodels.formula.api as sm
 FOLDERS = {'raw': 'data_raw/',
            'clean': 'data_clean/'}
 
-COLS_TO_MODEL = [#'pclass', 
-                 'pclass_1', 'pclass_2', 'pclass_3', 
-                 #'age',
-                 #'age_gen',
-                 #'age_norm',
-                 'age_scaled',
-                 #'age_0_16', 'age_16_25', 'age_25_40', 'age_40_60', 'age_60_75',
-                 #'sibsp',
-                 #'sibsp_0', 'sibsp_1', 'sibsp_2', 'sibsp_3', 'sibsp_4', 'sibsp_5', 'sibsp_8',
-                 #'parch',
-                 #'parch_0', 'parch_1', 'parch_2', 'parch_3', 'parch_4', 'parch_5', 'parch_6', 
-                 #'fam_size',
-                 'fam_size_1', 'fam_size_2', 'fam_size_3', 'fam_size_4', 'fam_size_5', 'fam_size_6', 'fam_size_7', 'fam_size_8', 'fam_size_11',
-                 #'fare',
-                 #'fare_gen',
-                 #'fare_log',
-                 #'fare_norm',
-                 'fare_scaled',
-                 #'is_alone',
-                 #'has_cabin',
-                 #'embarked',
-                 #'name_len',
-                 'name_scaled',
-                 'embarked_c', 'embarked_q', 'embarked_s',
-                 #'cabin_floor',
-                 #'cabin_floor_A', 'cabin_floor_B', 'cabin_floor_C', 'cabin_floor_D', 'cabin_floor_E', 'cabin_floor_F', 'cabin_floor_G', 'cabin_floor_T',
-                 #  Gender dummy variables, placed last to avoid comma-commenting issues
-                 #'sex_female',
-                 'sex_male']
 
+def get_feature_set(name):
     
+    features = pd.read_csv('data_raw/features.csv')
+    
+    return features.loc[features[name]==1, 'feature'].values
+
+
 #--------------------------------------
 #   Modeling Functions for Tidy Data
 #--------------------------------------
 def build_model_age():
     
-    x_train = get_split('x_train')
+    data = get_split('x_train').copy()
     
     if 'predict_age' not in globals():
-            
-        formula = 'age ~ pclass + sibsp + parch'
+
+        data['title_master'] = data.name.str.contains('Master') * 1
+        
+        for col in ['pclass', 'parch']:
+            encode = pd.get_dummies(data[col], prefix = col)
+            data = pd.concat([data, encode], axis = 1)
     
-        model_age = sm.ols(formula, data = x_train).fit()
+        formula = 'age ~ title_master + pclass_3 + parch_2 + parch_0 + pclass_1'
+    
+        model_age = sm.ols(formula, data = data[data.age.notnull()]).fit()
         
         globals()['predict_age'] = model_age
         
@@ -59,9 +42,11 @@ def build_model_age():
 
 def model_age(df):
     
+    data = df.copy()
+
     model = build_model_age()
 
-    age_pred = model.predict(df)
+    age_pred = model.predict(data)
     
     return np.ceil(age_pred)
 
@@ -134,46 +119,55 @@ def get_split(dataname = 'x_train'):
 #----------------------------------------------------------
 def tidy_data(data):
     
-    #   Fill in missing age values based on linear model
-    data['age_gen'] = data.age
-    data.loc[data.age_gen.isnull(), 'age_gen'] = model_age(data[data.age_gen.isnull()])
+    data['name_length'] = data.name.str.len()
+    data['title'] = data.name.str.extract(' ([A-Za-z]+)\.')
+    mr = ['Rev', 'Dr', 'Col', 'Capt', 'Don', 'Major']
+    mrs = ['Mme', 'Countess', 'Lady']
+    miss = ['Mlle']
+
+    data.loc[data.title.isin(mr), 'title'] = 'mr'
+    data.loc[data.title.isin(mrs), 'title'] = 'mrs'
+    data.loc[data.title.isin(miss), 'title'] = 'miss'
+    data.loc[data.title=='Master', 'title'] = 'master'
+    data.loc[~data.title.isin(['mr', 'mrs', 'miss', 'master']), 'title'] = ''
+    
+    data['cabin_floor'] = data.cabin.str.replace('[0-9]| ', '').str.get(0).str.lower()
+    data.loc[data.cabin_floor.isnull(), 'cabin_floor'] = 'z'
+    
+    data['ticket_alpha'] = data.ticket.str.extract('([A-Za-z\.\/]+)').str.replace('\.', '').str.lower()
+    data['ticket_num'] = data.ticket.str.extract('([0-9\.\/]+)').str.replace('\.', '')
+
+    data['fam_size'] = data.sibsp + data.parch + 1
+    data['is_alone'] = ((data.sibsp + data.parch) == 0) * 1
+
+    data.loc[data.embarked.isnull(), 'embarked'] = 'c'
+    data.embarked = data.embarked.str.lower()
+
+    for col in ['pclass', 'sex', 'sibsp', 'parch', 'embarked', 'title', 'cabin_floor', 'fam_size']:
+        encode = pd.get_dummies(data[col], prefix = col)
+        data = pd.concat([data, encode], axis = 1)
 
     #   Fill in missing fare values based on linear model
     data['fare_gen'] = data.fare
     data.loc[(data.fare == 0) | (data.fare.isnull()), 'fare_gen'] = model_fare(data[(data.fare == 0) | (data.fare.isnull())])
 
+    #   Fill in missing age values based on linear model
+    data['age_gen'] = data.age
+    data.loc[data.age_gen.isnull(), 'age_gen'] = model_age(data[data.age_gen.isnull()])
+
     #   Place ages into bins    
-    bins = [0, 16, 25, 40, 60, 75]
-   
-    data['age_bin'] = pd.cut(data['age_gen'], bins, labels = ['age_0_16', 'age_16_25', 'age_25_40', 'age_40_60', 'age_60_75'])
+    bins = [0, 14, 32, 99]
+
+    data['age_bin'] = pd.cut(data['age_gen'], bins, labels = ['age_0_14', 'age_14_32', 'age_32_99'])
     enc_age = pd.get_dummies(data.age_bin)
     data = pd.concat([data, enc_age], axis = 1)
 
-    data.loc[data.embarked.isnull(), 'embarked'] = 'c'
-    data.embarked = data.embarked.str.lower()
-
-    data['cabin_floor'] = data.cabin.str.replace('[0-9]| ', '').str.get(0).astype('category')
-
-    #   Create interaction variables
-    data['age_norm'] = data.age_gen / data.age_gen.max()
-    data['fare_norm'] = data.fare_gen / data.fare_gen.max()
-    data['fare_log'] = np.log(data.fare_gen)
-    data['fam_size'] = data.sibsp + data.parch + 1
-    data['ticket_class'] = data.ticket.str.replace('[0-9]| ', '')
-    data['is_alone'] = (data.fam_size==0).astype(int)
-    data['has_cabin'] = (data.cabin.isnull()).astype(int)
-    data['name_len'] = data.name.apply(lambda x: len(x))
-
     #   Scale age and fare using StandardScaler
-    std_scale = StandardScaler().fit(data[['age_gen', 'fare_gen', 'name_len']])
+    std_scale = StandardScaler().fit(data[['age_gen', 'fare_gen', 'name_length']])
     data['age_scaled'] = 0
     data['fare_scaled'] = 0
     data['name_scaled'] = 0
-    data[['age_scaled', 'fare_scaled', 'name_scaled']] = std_scale.transform(data[['age_gen', 'fare_gen', 'name_len']])
-
-    for col in ['pclass', 'sex', 'sibsp', 'parch', 'fam_size', 'embarked', 'cabin_floor']:
-        encode = pd.get_dummies(data[col], prefix = col)
-        data = pd.concat([data, encode], axis = 1)
+    data[['age_scaled', 'fare_scaled', 'name_scaled']] = std_scale.transform(data[['age_gen', 'fare_gen', 'name_length']])
 
     return data
 

@@ -1,9 +1,8 @@
 import pandas as pd
+import numpy as np
 
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import cross_val_score
-
-import plotting
 
 
 #-------------------------
@@ -16,7 +15,7 @@ def backward_feature_elimination(model, x, y):
     #   Initialize storage object with full set of columns
     features = x.columns
 
-    while len(features) > getattr(model, 'max_features'):
+    while len(features) > (getattr(model, 'max_features') or 2):
         print('Feature Count: {}'.format(len(features)))
         
         #   Run model
@@ -34,14 +33,20 @@ def backward_feature_elimination(model, x, y):
         print('Lowest Importance: ()'.format(low_import))
 
         features = [k for k, v in values.items() if (v > low_import) & (k != 'score')]
-   
-    return results
+
+    feat = pd.DataFrame(results)
+
+    best = feat.loc[feat.index == np.argmax(feat.score)]
+
+    print(feat.score)
+    print(best)
+    
+    return best.columns[best.notnull().values.ravel()].values
 
 
 #-------------------------
 #   Cross Validate
 #-------------------------
-
 def cross_validate(model, x, y, param = 'n_estimators', n_range = range(1,2), metric = 'accuracy'):
     
     all_scores = []

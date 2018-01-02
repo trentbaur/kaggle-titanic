@@ -1,6 +1,6 @@
 import numpy as np
 
-from gather_data import get_split, get_tidy, COLS_TO_MODEL
+from gather_data import get_split, get_tidy, get_feature_set
 import modeling
 
 x_train_tidy = get_tidy('train')
@@ -8,6 +8,8 @@ x_test_tidy = get_tidy('test')
 
 y_train = get_split('y_train')
 y_test = get_split('y_test')
+
+features = get_feature_set('baseline')
 
 #   x_train_tidy COULD be missing a dummy column that test_tidy or eval_tidy
 #       but we can't consider those fields anyways so exclude them
@@ -24,6 +26,8 @@ x_test_thin = x_test_tidy[shared_columns]
 from sklearn.ensemble import GradientBoostingClassifier
 
 model = GradientBoostingClassifier()
+
+x = modeling.backward_feature_elimination(model, x_train_thin, y_train)
 
 params = {'n_estimators': range(20, 150, 10),
           'learning_rate': np.arange(.02, .1, .01),
@@ -64,7 +68,7 @@ model = modeling.cross_all(model, x_train_thin, y_train, params)
 #-------------------------------------------------------------
 #   Use Backward Feature Elimination against resulting model
 #-------------------------------------------------------------
-modeling.backward_feature_elimination(model, x_train_thin, y_train)
+x = modeling.backward_feature_elimination(model, x_train_thin, y_train)
 
 
 #------------------------------------------------------------
